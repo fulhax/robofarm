@@ -28,11 +28,8 @@ include_directories(
     ${IL_INCLUDE_DIR}
     )
 
-
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
-
 
 add_executable(${CMAKE_PROJECT_NAME} ${COMMON_SRC} ${SHADER_DEPEND})
 
@@ -49,3 +46,5 @@ target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Werror")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wall")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wpedantic")
 install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin)
+
+add_subdirectory(libs)
