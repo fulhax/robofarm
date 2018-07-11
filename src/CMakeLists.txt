@@ -41,7 +41,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     m
     )
 
-target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC "GL_GLEXT_PROTOTYPES")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Werror")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wall")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wpedantic")
