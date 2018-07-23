@@ -132,7 +132,7 @@ void resizeTargets()
     }
 }
 
-void clear(float red, float green, float blue, float alpha, char color, char depth)
+void renderClear(float red, float green, float blue, float alpha, char color, char depth)
 {
     glClearColor(red, green, blue, alpha);
     GLbitfield mask = 0;

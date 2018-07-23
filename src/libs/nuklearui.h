@@ -14,6 +14,5 @@
 
 #include <stdarg.h>
 #include "nuklear.h"
-#include "nuklear_glfw_gl4.h"
 
 #endif //__NUKLEARUI_H__
