@@ -15,4 +15,9 @@
 #include <stdarg.h>
 #include "nuklear.h"
 
+struct nk_context* nk_ui_init();
+void nk_ui_destroy();
+void nk_ui_render();
+void nk_ui_update();
+
 #endif //__NUKLEARUI_H__

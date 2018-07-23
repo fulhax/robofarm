@@ -114,11 +114,6 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    if(access(options.inputfile, F_OK) != 0)
-    {
-        fprintf(stderr, "could not find: %s\n", options.inputfile);
-        return 1;
-    }
 
     if(!glfwInit())
     {
@@ -133,8 +128,7 @@ int main(int argc, char* argv[])
     }
 
     glfwSetErrorCallback(error_callback);
-    window = glfwCreateWindow(options.width, options.height, "glsltool", NULL, NULL);
-    printf("using inputfile:%s\n", options.inputfile);
+    window = glfwCreateWindow(options.width, options.height, "robofarm - editor", NULL, NULL);
 
     if(!window)
     {
@@ -156,6 +150,7 @@ int main(int argc, char* argv[])
     ilInit();
     iluInit();
     initImages();
+    nk_ui_init();
 
     while(!glfwWindowShouldClose(window) && !should_quit)
     {
@@ -169,16 +164,12 @@ int main(int argc, char* argv[])
         updateTime();
     }
 
+    nk_ui_destroy();
     cleanupImages();
     cleanupShaders();
     destroyFileWatcher();
     glfwDestroyWindow(window);
     glfwTerminate();
-
-    if(options.inputfile)
-    {
-        free(options.inputfile);
-    }
 
     return 0;
 }

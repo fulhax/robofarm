@@ -113,12 +113,6 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    if(access(options.inputfile, F_OK) != 0)
-    {
-        fprintf(stderr, "could not find: %s\n", options.inputfile);
-        return 1;
-    }
-
     if(!glfwInit())
     {
         fprintf(stderr, "Error: initing glfw\n");
@@ -132,8 +126,7 @@ int main(int argc, char* argv[])
     }
 
     glfwSetErrorCallback(error_callback);
-    window = glfwCreateWindow(options.width, options.height, "glsltool", NULL, NULL);
-    printf("using inputfile:%s\n", options.inputfile);
+    window = glfwCreateWindow(options.width, options.height, "robofarm", NULL, NULL);
 
     if(!window)
     {
@@ -173,11 +166,6 @@ int main(int argc, char* argv[])
     destroyFileWatcher();
     glfwDestroyWindow(window);
     glfwTerminate();
-
-    if(options.inputfile)
-    {
-        free(options.inputfile);
-    }
 
     return 0;
 }

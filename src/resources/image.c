@@ -281,16 +281,8 @@ void cleanupImages()
 
 void initImages()
 {
-    /*TODO: should i handle vertex and fragment textures differently?*/
-    /*for now just set the max bound textures to how many textures the fragment shader can handle*/
-    int vertmax = 0;
     int fragmax = 0;
-    int combinedmax = 0;
-    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &vertmax);
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &fragmax);
-    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &combinedmax);
-    fprintf(stdout, "Max bound textures:\n");
-    fprintf(stdout, "\tfragment:%i\n\tvertex:%i\n\tcombined:%i\n", fragmax, vertmax, combinedmax);
     maxboundtextures = fragmax;
     numboundtextures = 0;
 }

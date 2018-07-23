@@ -7,15 +7,15 @@
 #include <string.h>
 #include <libgen.h>
 
-glsltool_options options =
+robofarm_options options =
 {
-    INT_MIN, INT_MIN, 512, 512, "renderpath.js"
+    INT_MIN, INT_MIN, 512, 512
 };
 
 void print_help(const struct option* opts)
 {
     int i = 0;
-    printf("glsltool\n");
+    printf("robofarm\n");
 
     while(opts[i].name != 0)
     {
@@ -47,7 +47,6 @@ int handle_options(int argc, char* argv[])
         { "y", required_argument, 0, 'y' },
         { "width", required_argument, 0, 'W' },
         { "height", required_argument, 0, 'H' },
-        { "file", required_argument, 0, 'f' },
         { "help", no_argument, 0, 'h' },
         { 0, 0, 0, 0}
     };
@@ -73,26 +72,6 @@ int handle_options(int argc, char* argv[])
             case 'H':
                 options.height = atoi(optarg);
                 break;
-
-            case 'f':
-            {
-                if(access(optarg, F_OK) != 0)
-                {
-                    fprintf(stderr, "could not find: %s\n", optarg);
-                    exit(1);
-                }
-
-                options.inputfile = realpath(optarg, 0);
-                char* dir = strdup(options.inputfile);
-
-                if(dir != 0)
-                {
-                    chdir(dirname(dir));
-                    free(dir);
-                }
-
-                break;
-            }
 
             case 'h':
                 print_help(longOpts);
