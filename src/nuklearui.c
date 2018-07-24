@@ -59,6 +59,38 @@ void nk_ui_scroll_callback(struct GLFWwindow* win, double xoffset, double yoffse
     ui.scroll.y += yoffset;
 }
 
+void nk_ui_clipboard_paste(nk_handle usr, struct nk_text_edit* edit)
+{
+    const char* text = glfwGetClipboardString(window);
+
+    if(text)
+    {
+        nk_textedit_paste(edit, text, nk_strlen(text));
+    }
+}
+
+void nk_ui_clipboard_copy(nk_handle usr, const char* text, int len)
+{
+    char* str = 0;
+
+    if(!len)
+    {
+        return;
+    }
+
+    str = (char*)malloc((size_t)len + 1);
+
+    if(!str)
+    {
+        return;
+    }
+
+    memcpy(str, text, (size_t)len);
+    str[len] = '\0';
+    glfwSetClipboardString(window, str);
+    free(str);
+}
+
 nk_context* nk_ui_init()
 {
     if(!nk_init_default(&ui.context, 0))
@@ -70,6 +102,9 @@ nk_context* nk_ui_init()
     glfwSetScrollCallback(window, nk_ui_scroll_callback);
     glfwSetCharCallback(window, nk_ui_char_callback);
     glfwSetMouseButtonCallback(window, nk_ui_mouse_button_callback);
+    ui.context.clip.paste = nk_ui_clipboard_paste;
+    ui.context.clip.copy = nk_ui_clipboard_copy;
+    ui.context.clip.userdata = nk_handle_ptr(0);
     return &ui.context;
 }
 
