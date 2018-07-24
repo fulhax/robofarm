@@ -1,8 +1,10 @@
-add_library(nuklear STATIC "nuklearui.c")
+add_library(nuklear STATIC "nuklear.c")
 
 target_include_directories(nuklear PRIVATE
     ${CMAKE_SOURCE_DIR}/../external/nuklear
+    ${CMAKE_SOURCE_DIR}
     )
+
 
 add_library(robots STATIC
     "${CMAKE_SOURCE_DIR}/matrix.c"
@@ -13,12 +15,14 @@ add_library(robots STATIC
     "${CMAKE_SOURCE_DIR}/resources/image.c"
     "${CMAKE_SOURCE_DIR}/resources/shader.c"
     "${CMAKE_SOURCE_DIR}/vector.c"
+    "${CMAKE_SOURCE_DIR}/nuklearui.c"
     )
 
 target_compile_options(robots PUBLIC "-Werror")
 target_compile_options(robots PUBLIC "-Wall")
 target_compile_options(robots PUBLIC "-Wpedantic")
 target_include_directories(robots PRIVATE
+    ${CMAKE_SOURCE_DIR}/../external/nuklear
     ${CMAKE_SOURCE_DIR}
     ${OPENGL_INCLUDE_DIR}
     ${GLFW_INCLUDE_DIRS}

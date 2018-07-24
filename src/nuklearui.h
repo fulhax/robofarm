@@ -9,9 +9,6 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
 
-#define GLFW_INCLUDE_GLCOREARB
-#define GL_GLEXT_PROTOTYPES
-
 #include <stdarg.h>
 #include "nuklear.h"
 
