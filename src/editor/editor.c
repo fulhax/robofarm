@@ -114,7 +114,6 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-
     if(!glfwInit())
     {
         fprintf(stderr, "Error: initing glfw\n");
@@ -156,8 +155,10 @@ int main(int argc, char* argv[])
     {
         handleMouse();
         handleKeys();
+        nk_ui_update();
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        nk_ui_render();
         glfwSwapBuffers(window);
         glfwPollEvents();
         watchChanges();
@@ -170,6 +171,5 @@ int main(int argc, char* argv[])
     destroyFileWatcher();
     glfwDestroyWindow(window);
     glfwTerminate();
-
     return 0;
 }

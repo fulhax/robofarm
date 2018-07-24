@@ -11,8 +11,7 @@ typedef struct nk_context nk_context;
 struct ui_internals
 {
     nk_context context;
-    float scroll_x;
-    float scroll_y;
+    struct nk_vec2 scroll;
     unsigned int text[MAX_TEXT];
     unsigned int text_length;
     double mouse_double_x;
@@ -56,8 +55,8 @@ void nk_ui_char_callback(struct GLFWwindow* win, unsigned int codepoint)
 
 void nk_ui_scroll_callback(struct GLFWwindow* win, double xoffset, double yoffset)
 {
-    ui.scroll_x += xoffset;
-    ui.scroll_y += yoffset;
+    ui.scroll.x += xoffset;
+    ui.scroll.y += yoffset;
 }
 
 nk_context* nk_ui_init()
@@ -83,6 +82,69 @@ void nk_ui_render()
 {
 }
 
+void nk_ui_input()
+{
+    double x = 0;
+    double y = 0;
+    nk_input_begin(&ui.context);
+
+    for(int i = 0; i < ui.text_length; i++)
+    {
+        nk_input_unicode(&ui.context, ui.text[i]);
+    }
+
+    ui.text_length = 0;
+    nk_input_key(&ui.context, NK_KEY_DEL, glfwGetKey(window, GLFW_KEY_DELETE) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_ENTER, glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_TAB, glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_BACKSPACE, glfwGetKey(window, GLFW_KEY_BACKSPACE) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_UP, glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_DOWN, glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_TEXT_START, glfwGetKey(window, GLFW_KEY_HOME) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_TEXT_END, glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_SCROLL_START, glfwGetKey(window, GLFW_KEY_HOME) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_SCROLL_END, glfwGetKey(window, GLFW_KEY_END) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_SCROLL_DOWN, glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_SCROLL_UP, glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS);
+    nk_input_key(&ui.context, NK_KEY_SHIFT, glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+                 glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+
+    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+       glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+    {
+        nk_input_key(&ui.context, NK_KEY_COPY, glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_PASTE, glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_CUT, glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_TEXT_UNDO, glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_TEXT_REDO, glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_TEXT_WORD_LEFT, glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_TEXT_WORD_RIGHT, glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_TEXT_LINE_START, glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_TEXT_LINE_END, glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS);
+    }
+    else
+    {
+        nk_input_key(&ui.context, NK_KEY_LEFT, glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_RIGHT, glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS);
+        nk_input_key(&ui.context, NK_KEY_COPY, 0);
+        nk_input_key(&ui.context, NK_KEY_PASTE, 0);
+        nk_input_key(&ui.context, NK_KEY_CUT, 0);
+        nk_input_key(&ui.context, NK_KEY_SHIFT, 0);
+    }
+
+    glfwGetCursorPos(window, &x, &y);
+    nk_input_motion(&ui.context, (int)x, (int)y);
+    nk_input_button(&ui.context, NK_BUTTON_LEFT, (int)x, (int)y, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+    nk_input_button(&ui.context, NK_BUTTON_MIDDLE, (int)x, (int)y, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
+    nk_input_button(&ui.context, NK_BUTTON_RIGHT, (int)x, (int)y, glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+    nk_input_button(&ui.context, NK_BUTTON_DOUBLE, (int)ui.mouse_double_x, (int)ui.mouse_double_y, ui.double_click_down);
+    nk_input_scroll(&ui.context, ui.scroll);
+    ui.scroll.x = 0;
+    ui.scroll.y = 0;
+    nk_input_end(&ui.context);
+}
+
 void nk_ui_update()
 {
+    nk_ui_input();
 }
