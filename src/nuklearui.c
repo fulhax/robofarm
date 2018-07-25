@@ -6,11 +6,13 @@
 #include "renderfunc.h"
 
 typedef struct nk_context nk_context;
+typedef struct nk_font_atlas nk_font_atlas;
 #define MAX_TEXT 256
 
 struct ui_internals
 {
     nk_context context;
+    nk_font_atlas font_atlas;
     struct nk_vec2 scroll;
     unsigned int text[MAX_TEXT];
     unsigned int text_length;
@@ -91,6 +93,16 @@ void nk_ui_clipboard_copy(nk_handle usr, const char* text, int len)
     free(str);
 }
 
+void nk_ui_fontsetup()
+{
+    nk_font_atlas_init_default(&ui.font_atlas);
+    int w;
+    int h;
+    nk_font_atlas_bake(&ui.font_atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
+    printf("font size:%i %i\n", w, h);
+    nk_style_set_font(&ui.context, &ui.font_atlas.default_font->handle);
+}
+
 nk_context* nk_ui_init()
 {
     if(!nk_init_default(&ui.context, 0))
@@ -105,6 +117,7 @@ nk_context* nk_ui_init()
     ui.context.clip.paste = nk_ui_clipboard_paste;
     ui.context.clip.copy = nk_ui_clipboard_copy;
     ui.context.clip.userdata = nk_handle_ptr(0);
+    nk_ui_fontsetup();
     return &ui.context;
 }
 
@@ -115,6 +128,7 @@ void nk_ui_destroy()
 
 void nk_ui_render()
 {
+    nk_clear(&ui.context);
 }
 
 void nk_ui_input()

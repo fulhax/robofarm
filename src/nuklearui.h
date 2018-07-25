@@ -10,7 +10,7 @@
 #define NK_INCLUDE_DEFAULT_FONT
 
 #include <stdarg.h>
-#include "nuklear.h"
+#include <nuklear.h>
 
 struct nk_context* nk_ui_init();
 void nk_ui_destroy();
