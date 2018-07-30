@@ -7,6 +7,9 @@
 
 typedef struct nk_context nk_context;
 typedef struct nk_font_atlas nk_font_atlas;
+typedef struct nk_buffer nk_buffer;
+typedef struct nk_draw_command nk_draw_command;
+
 #define MAX_TEXT 256
 
 struct ui_internals
@@ -20,7 +23,18 @@ struct ui_internals
     double mouse_double_y;
     double last_button_click;
     char double_click_down;
+    nk_buffer cmds;
+    nk_buffer verts;
+    nk_buffer idx;
 } ui = {0};
+
+typedef struct ui_vertex
+{
+    float pos[3];
+    float uv[2];
+    char color[4];
+} ui_vertex;
+
 
 void nk_ui_mouse_button_callback(struct GLFWwindow* win, int button, int action, int mods)
 {
@@ -118,16 +132,46 @@ nk_context* nk_ui_init()
     ui.context.clip.copy = nk_ui_clipboard_copy;
     ui.context.clip.userdata = nk_handle_ptr(0);
     nk_ui_fontsetup();
+    nk_buffer_init_default(&ui.cmds);
+    nk_buffer_init_default(&ui.verts);
+    nk_buffer_init_default(&ui.idx);
     return &ui.context;
 }
 
 void nk_ui_destroy()
 {
+    nk_buffer_free(&ui.cmds);
+    nk_buffer_free(&ui.verts);
+    nk_buffer_free(&ui.idx);
     nk_free(&ui.context);
 }
 
 void nk_ui_render()
 {
+    struct nk_convert_config cfg = {0};
+    static const struct nk_draw_vertex_layout_element vertex_layout[] =
+    {
+        {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(ui_vertex, pos)},
+        {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(ui_vertex, uv)},
+        {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(ui_vertex, color)},
+        {NK_VERTEX_LAYOUT_END}
+    };
+    cfg.vertex_layout = vertex_layout;
+    cfg.vertex_size = sizeof(ui_vertex);
+    cfg.vertex_alignment = NK_ALIGNOF(ui_vertex);
+    cfg.circle_segment_count = 22;
+    cfg.curve_segment_count = 22;
+    cfg.arc_segment_count = 22;
+    cfg.global_alpha = 1.0f;
+    cfg.shape_AA = NK_ANTI_ALIASING_ON;
+    cfg.line_AA = NK_ANTI_ALIASING_ON;
+    nk_convert(&ui.context, &ui.cmds, &ui.verts, &ui.idx, &cfg);
+    const nk_draw_command* cmd;
+    nk_draw_foreach(cmd, &ui.context, &ui.cmds)
+    {
+        printf("element count %i\n", cmd->elem_count);
+    }
+    printf("\n");
     nk_clear(&ui.context);
 }
 
