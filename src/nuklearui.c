@@ -11,6 +11,14 @@ typedef struct nk_buffer nk_buffer;
 typedef struct nk_draw_command nk_draw_command;
 
 #define MAX_TEXT 256
+#define BUFFER_LEN 8192
+
+typedef struct ui_vertex
+{
+    float pos[3];
+    float uv[2];
+    char color[4];
+} ui_vertex;
 
 struct ui_internals
 {
@@ -24,17 +32,9 @@ struct ui_internals
     double last_button_click;
     char double_click_down;
     nk_buffer cmds;
-    nk_buffer verts;
-    nk_buffer idx;
+    ui_vertex vertexbuffer[BUFFER_LEN];
+    unsigned short indexbuffer[BUFFER_LEN];
 } ui = {0};
-
-typedef struct ui_vertex
-{
-    float pos[3];
-    float uv[2];
-    char color[4];
-} ui_vertex;
-
 
 void nk_ui_mouse_button_callback(struct GLFWwindow* win, int button, int action, int mods)
 {
@@ -132,22 +132,29 @@ nk_context* nk_ui_init()
     ui.context.clip.copy = nk_ui_clipboard_copy;
     ui.context.clip.userdata = nk_handle_ptr(0);
     nk_ui_fontsetup();
-    nk_buffer_init_default(&ui.cmds);
-    nk_buffer_init_default(&ui.verts);
-    nk_buffer_init_default(&ui.idx);
+    memset(ui.indexbuffer, 0, sizeof(unsigned short) * BUFFER_LEN);
+    memset(ui.vertexbuffer, 0, sizeof(ui_vertex) * BUFFER_LEN);
     return &ui.context;
 }
 
 void nk_ui_destroy()
 {
-    nk_buffer_free(&ui.cmds);
-    nk_buffer_free(&ui.verts);
-    nk_buffer_free(&ui.idx);
     nk_free(&ui.context);
+}
+
+void printvertex(ui_vertex* v)
+{
+    printf("pos: %f %f %f uv:%f %f color:%i %i %i %i\n",
+           v->pos[0], v->pos[1], v->pos[2],
+           v->uv[0], v->uv[1],
+           v->color[0], v->color[1], v->color[2], v->color[3]
+          );
 }
 
 void nk_ui_render()
 {
+    nk_buffer vbuf = {0};
+    nk_buffer ibuf = {0};
     struct nk_convert_config cfg = {0};
     static const struct nk_draw_vertex_layout_element vertex_layout[] =
     {
@@ -163,14 +170,45 @@ void nk_ui_render()
     cfg.curve_segment_count = 22;
     cfg.arc_segment_count = 22;
     cfg.global_alpha = 1.0f;
-    cfg.shape_AA = NK_ANTI_ALIASING_ON;
-    cfg.line_AA = NK_ANTI_ALIASING_ON;
-    nk_convert(&ui.context, &ui.cmds, &ui.verts, &ui.idx, &cfg);
-    const nk_draw_command* cmd;
-    nk_draw_foreach(cmd, &ui.context, &ui.cmds)
+    cfg.shape_AA = NK_ANTI_ALIASING_OFF;
+    cfg.line_AA = NK_ANTI_ALIASING_OFF;
+    nk_buffer_init_default(&ui.cmds);
+    nk_buffer_init_fixed(&vbuf, ui.vertexbuffer, sizeof(ui_vertex)*BUFFER_LEN);
+    nk_buffer_init_fixed(&ibuf, ui.indexbuffer, sizeof(unsigned short)*BUFFER_LEN);
+    int returncode = nk_convert(&ui.context, &ui.cmds, &vbuf, &ibuf, &cfg);
+    printf("context.draw_list %i %i\n", ui.context.draw_list.element_count, ((short*)ui.context.draw_list.elements->memory.ptr)[0]);
+    printf("context.draw_list %i\n", ui.context.draw_list.vertex_count);
+
+    if(returncode == 0)
     {
-        printf("element count %i\n", cmd->elem_count);
+        const nk_draw_command* cmd;
+        size_t offset = 0;
+        nk_draw_foreach(cmd, &ui.context, &ui.cmds)
+        {
+            printf("element count %i\n", cmd->elem_count);
+
+            if(cmd->elem_count == 0)
+            {
+                continue;
+            }
+
+            printf("sizeof idx:%lu\n", ibuf.size);
+
+            for(int i = 0; i < cmd->elem_count; i++)
+            {
+                printf("index %i\n", ui.indexbuffer[i]);
+            }
+
+            printvertex(&ui.vertexbuffer[0]);
+            offset += cmd->elem_count;
+            printf("offset:%lu\n", offset);
+            printf("\n");
+            printf("\n");
+        }
     }
+
+    nk_buffer_free(&ui.cmds);
+    printf("\n");
     printf("\n");
     nk_clear(&ui.context);
 }
