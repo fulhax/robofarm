@@ -14,14 +14,14 @@ pipeline
         {
             steps
             {
-                sh 'make'
+                sh 'make release'
             }
         }
         stage('check')
         {
             steps
             {
-                cppcheck("src")
+                cppcheckcommands()
                 gccwarnings()
             }
         }
