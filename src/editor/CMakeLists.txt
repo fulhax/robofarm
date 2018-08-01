@@ -1,6 +1,8 @@
+include_directories( SYSTEM
+    ${CMAKE_SOURCE_DIR}/../external/nuklear
+    )
 include_directories(
     ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/../external/nuklear
     ${CMAKE_SOURCE_DIR}/libs
     ${OPENGL_INCLUDE_DIR}
     ${GLFW_INCLUDE_DIRS}
