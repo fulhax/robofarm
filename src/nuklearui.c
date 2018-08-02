@@ -13,7 +13,6 @@ typedef struct nk_buffer nk_buffer;
 typedef struct nk_draw_command nk_draw_command;
 
 #define MAX_TEXT 256
-#define BUFFER_LEN 8192
 
 typedef struct ui_vertex
 {
@@ -21,6 +20,9 @@ typedef struct ui_vertex
     float uv[2];
     char color[4];
 } ui_vertex;
+
+#define VERTEX_BUFFER_SIZE (8192 * sizeof(ui_vertex))
+#define INDEX_BUFFER_SIZE (8192*sizeof(unsigned short))
 
 struct ui_internals
 {
@@ -34,9 +36,12 @@ struct ui_internals
     double last_button_click;
     char double_click_down;
     nk_buffer cmds;
-    ui_vertex vertexbuffer[BUFFER_LEN];
-    unsigned short indexbuffer[BUFFER_LEN];
+    ui_vertex* vertexbuffer;
+    unsigned short* indexbuffer;
     int shader;
+    unsigned int vertexarrayobject;
+    unsigned int vertexbufferobject;
+    unsigned int indexbufferobject;
 } ui = {0};
 
 void nk_ui_mouse_button_callback(struct GLFWwindow* win, int button, int action, int mods)
@@ -120,6 +125,19 @@ void nk_ui_fontsetup()
     nk_style_set_font(&ui.context, &ui.font_atlas.default_font->handle);
 }
 
+void nk_ui_glinit()
+{
+    glCreateVertexArrays(1, &ui.vertexarrayobject);
+    glCreateBuffers(1, &ui.vertexbufferobject);
+    glCreateBuffers(1, &ui.indexbufferobject);
+    /*glVertexArrayAttribFormat(ui.vertexarrayobjec*/
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    glNamedBufferStorage(ui.vertexbufferobject, VERTEX_BUFFER_SIZE, 0, flags);
+    glNamedBufferStorage(ui.indexbufferobject, INDEX_BUFFER_SIZE, 0, flags);
+    ui.indexbuffer = (unsigned short*)glMapNamedBufferRange(ui.indexbufferobject, 0, INDEX_BUFFER_SIZE, flags);
+    ui.vertexbuffer = (ui_vertex*)glMapNamedBufferRange(ui.vertexarrayobject, 0, VERTEX_BUFFER_SIZE, flags);
+}
+
 nk_context* nk_ui_init()
 {
     if(!nk_init_default(&ui.context, 0))
@@ -135,9 +153,19 @@ nk_context* nk_ui_init()
     ui.context.clip.copy = nk_ui_clipboard_copy;
     ui.context.clip.userdata = nk_handle_ptr(0);
     nk_ui_fontsetup();
-    memset(ui.indexbuffer, 0, sizeof(unsigned short) * BUFFER_LEN);
-    memset(ui.vertexbuffer, 0, sizeof(ui_vertex) * BUFFER_LEN);
     ui.shader = loadShader("shaders/ui/ui.vert", "shaders/ui/ui.frag", 0, 0, 0);
+    nk_ui_glinit();
+
+    if(ui.indexbuffer)
+    {
+        memset(ui.indexbuffer, 0, INDEX_BUFFER_SIZE);
+    }
+
+    if(ui.vertexbuffer)
+    {
+        memset(ui.vertexbuffer, 0, VERTEX_BUFFER_SIZE);
+    }
+
     return &ui.context;
 }
 
@@ -168,8 +196,8 @@ void nk_ui_render()
     cfg.shape_AA = NK_ANTI_ALIASING_OFF;
     cfg.line_AA = NK_ANTI_ALIASING_OFF;
     nk_buffer_init_default(&ui.cmds);
-    nk_buffer_init_fixed(&vbuf, ui.vertexbuffer, sizeof(ui_vertex)*BUFFER_LEN);
-    nk_buffer_init_fixed(&ibuf, ui.indexbuffer, sizeof(unsigned short)*BUFFER_LEN);
+    nk_buffer_init_fixed(&vbuf, ui.vertexbuffer, VERTEX_BUFFER_SIZE);
+    nk_buffer_init_fixed(&ibuf, ui.indexbuffer, INDEX_BUFFER_SIZE);
     int returncode = nk_convert(&ui.context, &ui.cmds, &vbuf, &ibuf, &cfg);
 
     if(returncode == 0)
