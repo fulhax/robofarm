@@ -12,6 +12,7 @@ typedef struct nk_context nk_context;
 typedef struct nk_font_atlas nk_font_atlas;
 typedef struct nk_buffer nk_buffer;
 typedef struct nk_draw_command nk_draw_command;
+extern unsigned int currentprogram;
 
 #define MAX_TEXT 256
 
@@ -43,6 +44,7 @@ struct ui_internals
     unsigned int vertexarrayobject;
     unsigned int vertexbufferobject;
     unsigned int indexbufferobject;
+    GLsync sync;
 } ui = {0};
 
 void nk_ui_mouse_button_callback(struct GLFWwindow* win, int button, int action, int mods)
@@ -132,7 +134,7 @@ void nk_ui_glinit()
     glCreateBuffers(1, &ui.vertexbufferobject);
     glCreateBuffers(1, &ui.indexbufferobject);
     /*glVertexArrayAttribFormat(ui.vertexarrayobjec*/
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     glNamedBufferStorage(ui.vertexbufferobject, VERTEX_BUFFER_SIZE, 0, flags);
     glNamedBufferStorage(ui.indexbufferobject, INDEX_BUFFER_SIZE, 0, flags);
     ui.indexbuffer = (unsigned short*)glMapNamedBufferRange(ui.indexbufferobject, 0, INDEX_BUFFER_SIZE, flags);
@@ -174,6 +176,33 @@ void nk_ui_destroy()
 {
     nk_free(&ui.context);
 }
+void nk_ui_wait_for_buffer_unlock()
+{
+    if(!ui.sync)
+    {
+        return;
+    }
+
+    while(1)
+    {
+        GLenum wait = glClientWaitSync(ui.sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1);
+
+        if(wait == GL_ALREADY_SIGNALED || wait == GL_CONDITION_SATISFIED)
+        {
+            return;
+        }
+    }
+}
+
+void nk_ui_lock_buffer()
+{
+    if(ui.sync)
+    {
+        glDeleteSync(ui.sync);
+    }
+
+    ui.sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+}
 
 void nk_ui_render()
 {
@@ -194,8 +223,9 @@ void nk_ui_render()
     cfg.curve_segment_count = 22;
     cfg.arc_segment_count = 22;
     cfg.global_alpha = 1.0f;
-    cfg.shape_AA = NK_ANTI_ALIASING_OFF;
-    cfg.line_AA = NK_ANTI_ALIASING_OFF;
+    cfg.shape_AA = NK_ANTI_ALIASING_ON;
+    cfg.line_AA = NK_ANTI_ALIASING_ON;
+    nk_ui_wait_for_buffer_unlock();
     nk_buffer_init_default(&ui.cmds);
     nk_buffer_init_fixed(&vbuf, ui.vertexbuffer, VERTEX_BUFFER_SIZE);
     nk_buffer_init_fixed(&ibuf, ui.indexbuffer, INDEX_BUFFER_SIZE);
@@ -205,20 +235,49 @@ void nk_ui_render()
     {
         const nk_draw_command* cmd;
         size_t offset = 0;
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glBindBuffer(GL_ARRAY_BUFFER, ui.vertexbufferobject);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ui.indexbufferobject);
+        bindShader(ui.shader);
+        glBindAttribLocation(currentprogram, 0, "in_Position");
+        glBindAttribLocation(currentprogram, 1, "in_Uvs");
+        glBindAttribLocation(currentprogram, 2, "in_Color");
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
         nk_draw_foreach(cmd, &ui.context, &ui.cmds)
         {
+            /*printf("texture %p\n", cmd->texture.ptr);*/
             if(cmd->elem_count == 0)
             {
                 continue;
             }
 
+            glVertexAttribPointer(0, 3, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));
+            glVertexAttribPointer(1, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, uv));
+            glVertexAttribPointer(2, 4, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, color));
+            glDrawElements(GL_TRIANGLES, cmd->elem_count, GL_UNSIGNED_SHORT, (void*)offset);
+            /*printf("%f %f %f\n",ui.vertexbuffer[0].pos[0],ui.vertexbuffer[0].pos[1],ui.vertexbuffer[0].pos[2]);*/
             offset += cmd->elem_count;
-            printf("offset:%zu\n", offset);
         }
+        bindShader(-1);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glDisable(GL_BLEND);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
     }
 
     nk_buffer_free(&ui.cmds);
     nk_clear(&ui.context);
+    nk_ui_lock_buffer();
 }
 
 void nk_ui_input()
