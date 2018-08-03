@@ -6,6 +6,7 @@
 #include "renderfunc.h"
 #include "resources.h"
 #include <unistd.h>
+#include <stdalign.h>
 
 typedef struct nk_context nk_context;
 typedef struct nk_font_atlas nk_font_atlas;
@@ -181,14 +182,14 @@ void nk_ui_render()
     struct nk_convert_config cfg = {0};
     static const struct nk_draw_vertex_layout_element vertex_layout[] =
     {
-        {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(ui_vertex, pos)},
-        {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(ui_vertex, uv)},
-        {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(ui_vertex, color)},
+        {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, offsetof(ui_vertex, pos)},
+        {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, offsetof(ui_vertex, uv)},
+        {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, offsetof(ui_vertex, color)},
         {NK_VERTEX_LAYOUT_END}
     };
     cfg.vertex_layout = vertex_layout;
     cfg.vertex_size = sizeof(ui_vertex);
-    cfg.vertex_alignment = NK_ALIGNOF(ui_vertex);
+    cfg.vertex_alignment = alignof(ui_vertex);
     cfg.circle_segment_count = 22;
     cfg.curve_segment_count = 22;
     cfg.arc_segment_count = 22;
