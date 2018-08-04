@@ -47,6 +47,7 @@ struct ui_internals
     unsigned int vertexbufferobject;
     unsigned int indexbufferobject;
     GLsync sync;
+    unsigned int font_texture;
 } ui = {0};
 
 void nk_ui_mouse_button_callback(struct GLFWwindow* win, int button, int action, int mods)
@@ -122,10 +123,16 @@ void nk_ui_clipboard_copy(nk_handle usr, const char* text, int len)
 
 void nk_ui_fontsetup()
 {
+    glGenTextures(1, &ui.font_texture);
+    glBindTexture(GL_TEXTURE_2D, ui.font_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     nk_font_atlas_init_default(&ui.font_atlas);
     int w;
     int h;
-    nk_font_atlas_bake(&ui.font_atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
+    const void* image = nk_font_atlas_bake(&ui.font_atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    nk_font_atlas_end(&ui.font_atlas, nk_handle_id(ui.font_texture), 0);
     printf("font size:%i %i\n", w, h);
     nk_style_set_font(&ui.context, &ui.font_atlas.default_font->handle);
 }
@@ -253,6 +260,9 @@ void nk_ui_render()
                       -1.0f, 1.0f, 0.0f, 1.0f
                      };
         setUniformMat4("orthomat", &ortho);
+        int texuniform = 0;
+        glActiveTexture(GL_TEXTURE0);
+        setUniformi("texture", &texuniform, 1);
         glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -266,6 +276,10 @@ void nk_ui_render()
                 continue;
             }
 
+            /*printf("texture:%i\n", cmd->texture.id);*/
+            int hastex=cmd->texture.id!=0;
+            setUniformi("hastexture", &hastex, 1);
+            glBindTexture(GL_TEXTURE_2D, cmd->texture.id);
             glScissor(
                 (GLint)(cmd->clip_rect.x),
                 (GLint)((options.height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))),
