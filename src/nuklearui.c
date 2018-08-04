@@ -7,6 +7,8 @@
 #include "resources.h"
 #include <unistd.h>
 #include <stdalign.h>
+#include "matrix.h"
+#include "options.h"
 
 typedef struct nk_context nk_context;
 typedef struct nk_font_atlas nk_font_atlas;
@@ -20,7 +22,7 @@ typedef struct ui_vertex
 {
     float pos[3];
     float uv[2];
-    char color[4];
+    unsigned char color[4];
 } ui_vertex;
 
 #define VERTEX_BUFFER_SIZE (8192 * sizeof(ui_vertex))
@@ -233,6 +235,7 @@ void nk_ui_render()
 
     if(returncode == 0)
     {
+        glViewport(0, 0, options.width, options.height);
         const nk_draw_command* cmd;
         size_t offset = 0;
         glEnableVertexAttribArray(0);
@@ -241,9 +244,16 @@ void nk_ui_render()
         glBindBuffer(GL_ARRAY_BUFFER, ui.vertexbufferobject);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ui.indexbufferobject);
         bindShader(ui.shader);
+        /*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);*/
         glBindAttribLocation(currentprogram, 0, "in_Position");
         glBindAttribLocation(currentprogram, 1, "in_Uvs");
         glBindAttribLocation(currentprogram, 2, "in_Color");
+        mat4 ortho = {2.0f / (float)options.width, 0.0f, 0.0f, 0.0f,
+                      0.0f, -2.0f / (float)options.height, 0.0f, 0.0f,
+                      0.0f, 0.0f, -1.0f, 0.0f,
+                      -1.0f, 1.0f, 0.0f, 1.0f
+                     };
+        setUniformMat4("orthomat", &ortho);
         glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -259,7 +269,7 @@ void nk_ui_render()
 
             glVertexAttribPointer(0, 3, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));
             glVertexAttribPointer(1, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, uv));
-            glVertexAttribPointer(2, 4, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, color));
+            glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, 1, sizeof(ui_vertex), (void*)offsetof(ui_vertex, color));
             glDrawElements(GL_TRIANGLES, cmd->elem_count, GL_UNSIGNED_SHORT, (void*)offset);
             /*printf("%f %f %f\n",ui.vertexbuffer[0].pos[0],ui.vertexbuffer[0].pos[1],ui.vertexbuffer[0].pos[2]);*/
             offset += cmd->elem_count;
