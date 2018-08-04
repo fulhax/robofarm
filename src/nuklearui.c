@@ -254,11 +254,13 @@ void nk_ui_render()
         glBindAttribLocation(currentprogram, 0, "in_Position");
         glBindAttribLocation(currentprogram, 1, "in_Uvs");
         glBindAttribLocation(currentprogram, 2, "in_Color");
-        mat4 ortho = {2.0f / (float)options.width, 0.0f, 0.0f, 0.0f,
-                      0.0f, -2.0f / (float)options.height, 0.0f, 0.0f,
-                      0.0f, 0.0f, -1.0f, 0.0f,
-                      -1.0f, 1.0f, 0.0f, 1.0f
-                     };
+        mat4 ortho = {0};
+        ortho.m[0] = 2.0f / (float)options.width;
+        ortho.m[5] = -2.0f / (float)options.height;
+        ortho.m[10] = -1.0f;
+        ortho.m[12] = -1.0f;
+        ortho.m[13] = 1.0f;
+        ortho.m[15] = 1.0f;
         setUniformMat4("orthomat", &ortho);
         int texuniform = 0;
         glActiveTexture(GL_TEXTURE0);
@@ -277,7 +279,7 @@ void nk_ui_render()
             }
 
             /*printf("texture:%i\n", cmd->texture.id);*/
-            int hastex=cmd->texture.id!=0;
+            int hastex = cmd->texture.id != 0;
             setUniformi("hastexture", &hastex, 1);
             glBindTexture(GL_TEXTURE_2D, cmd->texture.id);
             glScissor(
