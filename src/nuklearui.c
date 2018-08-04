@@ -25,8 +25,8 @@ typedef struct ui_vertex
     unsigned char color[4];
 } ui_vertex;
 
-#define VERTEX_BUFFER_SIZE (8192 * sizeof(ui_vertex))
-#define INDEX_BUFFER_SIZE (8192*sizeof(unsigned short))
+#define VERTEX_BUFFER_SIZE (16384 * sizeof(ui_vertex))
+#define INDEX_BUFFER_SIZE (16384 * sizeof(unsigned short))
 
 struct ui_internals
 {
@@ -226,7 +226,7 @@ void nk_ui_render()
     cfg.arc_segment_count = 22;
     cfg.global_alpha = 1.0f;
     cfg.shape_AA = NK_ANTI_ALIASING_ON;
-    cfg.line_AA = NK_ANTI_ALIASING_ON;
+    cfg.line_AA = NK_ANTI_ALIASING_OFF;
     nk_ui_wait_for_buffer_unlock();
     nk_buffer_init_default(&ui.cmds);
     nk_buffer_init_fixed(&vbuf, ui.vertexbuffer, VERTEX_BUFFER_SIZE);
@@ -237,14 +237,13 @@ void nk_ui_render()
     {
         glViewport(0, 0, options.width, options.height);
         const nk_draw_command* cmd;
-        size_t offset = 0;
+        nk_draw_index* offset = 0;
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
         glBindBuffer(GL_ARRAY_BUFFER, ui.vertexbufferobject);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ui.indexbufferobject);
         bindShader(ui.shader);
-        /*glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);*/
         glBindAttribLocation(currentprogram, 0, "in_Position");
         glBindAttribLocation(currentprogram, 1, "in_Uvs");
         glBindAttribLocation(currentprogram, 2, "in_Color");
@@ -259,19 +258,23 @@ void nk_ui_render()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
+        glEnable(GL_SCISSOR_TEST);
         nk_draw_foreach(cmd, &ui.context, &ui.cmds)
         {
-            /*printf("texture %p\n", cmd->texture.ptr);*/
             if(cmd->elem_count == 0)
             {
                 continue;
             }
 
+            glScissor(
+                (GLint)(cmd->clip_rect.x),
+                (GLint)((options.height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))),
+                (GLint)(cmd->clip_rect.w),
+                (GLint)(cmd->clip_rect.h));
             glVertexAttribPointer(0, 3, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));
             glVertexAttribPointer(1, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, uv));
             glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, 1, sizeof(ui_vertex), (void*)offsetof(ui_vertex, color));
-            glDrawElements(GL_TRIANGLES, cmd->elem_count, GL_UNSIGNED_SHORT, (void*)offset);
-            /*printf("%f %f %f\n",ui.vertexbuffer[0].pos[0],ui.vertexbuffer[0].pos[1],ui.vertexbuffer[0].pos[2]);*/
+            glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
             offset += cmd->elem_count;
         }
         bindShader(-1);
@@ -283,6 +286,7 @@ void nk_ui_render()
         glDisable(GL_BLEND);
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
+        glDisable(GL_SCISSOR_TEST);
     }
 
     nk_buffer_free(&ui.cmds);
