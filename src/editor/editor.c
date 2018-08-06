@@ -151,6 +151,7 @@ int main(int argc, char* argv[])
     initImages();
     struct nk_context* ctx = nk_ui_init();
     struct nk_colorf bg = {0};
+    struct nk_image img = nk_ui_image("./external/nuklear/example/icon/tools.png");
 
     while(!glfwWindowShouldClose(window) && !should_quit)
     {
@@ -169,6 +170,12 @@ int main(int argc, char* argv[])
             nk_layout_row_static(ctx, 30, 80, 1);
 
             if(nk_button_label(ctx, "button"))
+            {
+                fprintf(stdout, "button pressed\n");
+            }
+
+            nk_layout_row_static(ctx, 48, 48, 1);
+            if(nk_button_image(ctx, img))
             {
                 fprintf(stdout, "button pressed\n");
             }
@@ -205,7 +212,7 @@ int main(int argc, char* argv[])
         }
 
         nk_end(ctx);
-        glClearColor(0.5, 0.5, 0.5, 1);
+        glClearColor(bg.r, bg.g, bg.b, bg.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         nk_ui_render();
         glfwSwapBuffers(window);

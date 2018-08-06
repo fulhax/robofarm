@@ -9,12 +9,17 @@
 #include <stdalign.h>
 #include "matrix.h"
 #include "options.h"
+#include "defines.h"
 
 typedef struct nk_context nk_context;
 typedef struct nk_font_atlas nk_font_atlas;
 typedef struct nk_buffer nk_buffer;
 typedef struct nk_draw_command nk_draw_command;
+
 extern unsigned int currentprogram;
+
+extern image* textures;
+extern int numtextures;
 
 #define MAX_TEXT 256
 
@@ -27,6 +32,18 @@ typedef struct ui_vertex
 
 #define VERTEX_BUFFER_SIZE (16384 * sizeof(ui_vertex))
 #define INDEX_BUFFER_SIZE (16384 * sizeof(unsigned short))
+
+#define MAX_TEXTURES 16384
+
+#define UI_TEXTURE_NONE 0
+#define UI_TEXTURE_GL 1
+#define UI_TEXTURE_IMAGE 2
+
+typedef struct ui_texture
+{
+    char type;
+    unsigned int id;
+} ui_texture;
 
 struct ui_internals
 {
@@ -47,7 +64,8 @@ struct ui_internals
     unsigned int vertexbufferobject;
     unsigned int indexbufferobject;
     GLsync sync;
-    unsigned int font_texture;
+    ui_texture textures[MAX_TEXTURES];
+    unsigned int numTextures;
 } ui = {0};
 
 void nk_ui_mouse_button_callback(struct GLFWwindow* win, int button, int action, int mods)
@@ -123,18 +141,19 @@ void nk_ui_clipboard_copy(nk_handle usr, const char* text, int len)
 
 void nk_ui_fontsetup()
 {
-    glGenTextures(1, &ui.font_texture);
-    glBindTexture(GL_TEXTURE_2D, ui.font_texture);
+    ui.textures[1].type = UI_TEXTURE_GL;
+    glGenTextures(1, &ui.textures[1].id);
+    glBindTexture(GL_TEXTURE_2D, ui.textures[1].id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     nk_font_atlas_init_default(&ui.font_atlas);
-    int w;
-    int h;
+    int w = 0;
+    int h = 0;
     const void* image = nk_font_atlas_bake(&ui.font_atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-    nk_font_atlas_end(&ui.font_atlas, nk_handle_id(ui.font_texture), 0);
-    printf("font size:%i %i\n", w, h);
+    nk_font_atlas_end(&ui.font_atlas, nk_handle_id(1), 0);
     nk_style_set_font(&ui.context, &ui.font_atlas.default_font->handle);
+    ui.numTextures = 2;
 }
 
 void nk_ui_glinit()
@@ -142,7 +161,6 @@ void nk_ui_glinit()
     glCreateVertexArrays(1, &ui.vertexarrayobject);
     glCreateBuffers(1, &ui.vertexbufferobject);
     glCreateBuffers(1, &ui.indexbufferobject);
-    /*glVertexArrayAttribFormat(ui.vertexarrayobjec*/
     GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     glNamedBufferStorage(ui.vertexbufferobject, VERTEX_BUFFER_SIZE, 0, flags);
     glNamedBufferStorage(ui.indexbufferobject, INDEX_BUFFER_SIZE, 0, flags);
@@ -279,9 +297,45 @@ void nk_ui_render()
             }
 
             /*printf("texture:%i\n", cmd->texture.id);*/
-            int hastex = cmd->texture.id != 0;
+            int hastex = 0;
+            ui_texture* tex = &ui.textures[cmd->texture.id];
+
+            switch(tex->type)
+            {
+                case UI_TEXTURE_NONE:
+                {
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                    break;
+                }
+
+                case UI_TEXTURE_GL:
+                {
+                    hastex = 1;
+                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    break;
+                }
+
+                case UI_TEXTURE_IMAGE:
+                {
+                    hastex = 1;
+
+                    if(tex->id < numtextures)
+                    {
+                        glBindTexture(GL_TEXTURE_2D, textures[tex->id].glImage);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    }
+
+                    break;
+                }
+
+                default:
+                    break;
+            }
+
             setUniformi("hastexture", &hastex, 1);
-            glBindTexture(GL_TEXTURE_2D, cmd->texture.id);
             glScissor(
                 (GLint)(cmd->clip_rect.x),
                 (GLint)((options.height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))),
@@ -375,4 +429,18 @@ void nk_ui_input()
 void nk_ui_update()
 {
     nk_ui_input();
+}
+
+struct nk_image nk_ui_image(char* filename)
+{
+    int image = loadImage(filename, IMG_TOP);
+    ui.textures[ui.numTextures].type = UI_TEXTURE_IMAGE;
+    ui.textures[ui.numTextures].id = image;
+    struct nk_rect r = nk_rect(0, 0, textures[image].width, textures[image].height);
+    struct nk_image out = nk_subimage_id(ui.numTextures,
+                                         textures[image].width,
+                                         textures[image].height,
+                                         r);
+    ui.numTextures++;
+    return out;
 }
