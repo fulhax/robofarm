@@ -263,6 +263,7 @@ void nk_ui_render()
         glViewport(0, 0, options.width, options.height);
         const nk_draw_command* cmd;
         nk_draw_index* offset = 0;
+        glBindVertexArray(ui.vertexarrayobject);
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
