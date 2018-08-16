@@ -30,8 +30,8 @@ typedef struct ui_vertex
     unsigned char color[4];
 } ui_vertex;
 
-#define VERTEX_BUFFER_SIZE (16384 * sizeof(ui_vertex))
-#define INDEX_BUFFER_SIZE (16384 * sizeof(unsigned short))
+#define VERTEX_BUFFER_SIZE (65535 * sizeof(ui_vertex))
+#define INDEX_BUFFER_SIZE (65535 * sizeof(unsigned short))
 
 #define MAX_TEXTURES 16384
 

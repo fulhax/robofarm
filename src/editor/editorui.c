@@ -3,6 +3,11 @@
 #include "editorui.h"
 #include "opengl.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <stdlib.h>
+#include <string.h>
+#include "notify.h"
 
 struct nk_colorf bg = {0};
 extern GLFWwindow* window;
@@ -12,9 +17,64 @@ struct ui_images
     struct nk_image buttontest;
 } ui_images;
 
+struct ui_tiles
+{
+    struct dirent** filenames;
+    int numfiles;
+} ui_tiles;
+
+int pngfilter(const struct dirent* entry)
+{
+    char* ext = strrchr(entry->d_name, '.');
+
+    if(ext)
+    {
+        if(strcmp(ext, ".png") == 0)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+void readtilefolder()
+{
+    if(ui_tiles.filenames != 0)
+    {
+        for(int i = 0; i < ui_tiles.numfiles; i++)
+        {
+            free(ui_tiles.filenames[i]);
+        }
+
+        free(ui_tiles.filenames);
+        ui_tiles.filenames = 0;
+        ui_tiles.numfiles = 0;
+    }
+
+    ui_tiles.numfiles = scandir("./data/tiles", &ui_tiles.filenames, pngfilter, alphasort);
+
+    if(ui_tiles.numfiles == -1)
+    {
+        perror("scandir");
+    }
+
+    for(int i = 0; i < ui_tiles.numfiles; i++)
+    {
+        printf("%s\n", ui_tiles.filenames[i]->d_name);
+    }
+}
+
+void folderchangecallback(const char* dir)
+{
+    readtilefolder();
+}
+
 void ui_init()
 {
     ctx = nk_ui_init();
+    watchFile("./data/tiles", folderchangecallback);
+    readtilefolder();
     ui_images.buttontest = nk_ui_image("./external/nuklear/example/icon/tools.png");
 }
 
@@ -32,9 +92,7 @@ void ui_logic()
 {
     nk_ui_update();
 
-    if(nk_begin(ctx, "Demo", nk_rect(options.width - 250, 0, 250, options.height),
-                (NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
-                 NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE) & 0))
+    if(nk_begin(ctx, "", nk_rect(options.width - 250, 0, 250, options.height), NK_WINDOW_BORDER))
     {
         enum {EASY, HARD};
         static int op = EASY;
@@ -51,6 +109,16 @@ void ui_logic()
         if(nk_button_image(ctx, ui_images.buttontest))
         {
             fprintf(stdout, "button pressed\n");
+        }
+
+        nk_layout_row_static(ctx, 32, 32, 6);
+
+        for(int i = 0; i < ui_tiles.numfiles; i++)
+        {
+            if(nk_button_image(ctx, ui_images.buttontest))
+            {
+                fprintf(stdout, "button pressed\n");
+            }
         }
 
         nk_layout_row_dynamic(ctx, 30, 2);
