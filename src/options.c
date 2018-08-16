@@ -9,7 +9,7 @@
 
 robofarm_options options =
 {
-    INT_MIN, INT_MIN, 512, 512
+    INT_MIN, INT_MIN, 800, 600
 };
 
 void print_help(const struct option* opts)

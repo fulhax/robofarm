@@ -6,4 +6,6 @@ void ui_destroy();
 void ui_render();
 void ui_logic();
 
+extern struct nk_colorf bg;
+
 #endif //__EDITORUI_H__
