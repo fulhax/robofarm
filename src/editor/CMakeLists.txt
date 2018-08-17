@@ -26,4 +26,5 @@ target_link_libraries(tileeditor
 target_compile_options(tileeditor PUBLIC "-Werror")
 target_compile_options(tileeditor PUBLIC "-Wall")
 target_compile_options(tileeditor PUBLIC "-Wpedantic")
+target_compile_options(tileeditor PUBLIC "-Wno-missing-braces")
 install(TARGETS tileeditor RUNTIME DESTINATION bin)

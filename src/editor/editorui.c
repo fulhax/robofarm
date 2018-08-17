@@ -26,7 +26,8 @@ struct ui_tiles
 struct tile_type
 {
     char name[64];
-} tiletypes[256] = {{0}};
+} tiletypes[256] = {0};
+
 unsigned char numtiletypes = 0;
 
 int pngfilter(const struct dirent* entry)

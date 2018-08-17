@@ -34,6 +34,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Werror")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wall")
 target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wpedantic")
+target_compile_options(${CMAKE_PROJECT_NAME} PUBLIC "-Wno-missing-braces")
 install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin)
 
 add_subdirectory(editor)
