@@ -25,7 +25,7 @@ extern int numtextures;
 
 typedef struct ui_vertex
 {
-    float pos[3];
+    float pos[2];
     float uv[2];
     unsigned char color[4];
 } ui_vertex;
@@ -251,7 +251,7 @@ void nk_ui_render()
     cfg.arc_segment_count = 22;
     cfg.global_alpha = 1.0f;
     cfg.shape_AA = NK_ANTI_ALIASING_ON;
-    cfg.line_AA = NK_ANTI_ALIASING_OFF;
+    cfg.line_AA = NK_ANTI_ALIASING_ON;
     nk_ui_wait_for_buffer_unlock();
     nk_buffer_init_default(&ui.cmds);
     nk_buffer_init_fixed(&vbuf, ui.vertexbuffer, VERTEX_BUFFER_SIZE);
@@ -342,7 +342,7 @@ void nk_ui_render()
                 (GLint)((options.height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))),
                 (GLint)(cmd->clip_rect.w),
                 (GLint)(cmd->clip_rect.h));
-            glVertexAttribPointer(0, 3, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));
+            glVertexAttribPointer(0, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));
             glVertexAttribPointer(1, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, uv));
             glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, 1, sizeof(ui_vertex), (void*)offsetof(ui_vertex, color));
             glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
