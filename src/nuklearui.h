@@ -8,6 +8,7 @@
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
+#define NK_UINT_DRAW_INDEX
 
 #include <stdarg.h>
 #include <nuklear.h>

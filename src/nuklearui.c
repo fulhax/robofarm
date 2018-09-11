@@ -345,7 +345,7 @@ void nk_ui_render()
             glVertexAttribPointer(0, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));
             glVertexAttribPointer(1, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, uv));
             glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, 1, sizeof(ui_vertex), (void*)offsetof(ui_vertex, color));
-            glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
+            glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_INT, offset);
             offset += cmd->elem_count;
         }
         bindShader(-1);
