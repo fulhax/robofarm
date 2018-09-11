@@ -10,8 +10,9 @@ include_directories(
 
 add_executable(tileeditor
     editor.c
-    editorui.c
     )
+add_library(editorui SHARED editorui.c)
+target_link_libraries(editorui nuklear robots)
 
 target_link_libraries(tileeditor
     ${GLFW_LIBRARIES}
@@ -21,10 +22,12 @@ target_link_libraries(tileeditor
     m
     robots
     nuklear
+    dl
     )
 
 target_compile_options(tileeditor PUBLIC "-Werror")
 target_compile_options(tileeditor PUBLIC "-Wall")
 target_compile_options(tileeditor PUBLIC "-Wpedantic")
 target_compile_options(tileeditor PUBLIC "-Wno-missing-braces")
+target_compile_options(editorui PUBLIC "-fPIC")
 install(TARGETS tileeditor RUNTIME DESTINATION bin)

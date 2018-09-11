@@ -1,4 +1,5 @@
 add_library(nuklear STATIC "nuklear.c")
+target_compile_options(nuklear PUBLIC "-fPIC")
 
 target_include_directories(nuklear SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/../external/nuklear
@@ -23,6 +24,7 @@ add_library(robots STATIC
 target_compile_options(robots PUBLIC "-Werror")
 target_compile_options(robots PUBLIC "-Wall")
 target_compile_options(robots PUBLIC "-Wpedantic")
+target_compile_options(robots PUBLIC "-fPIC")
 target_include_directories(robots SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/../external/nuklear
     )

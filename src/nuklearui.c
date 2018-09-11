@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <stdalign.h>
 #include "matrix.h"
-#include "options.h"
 #include "defines.h"
 
 typedef struct nk_context nk_context;
@@ -198,9 +197,20 @@ nk_context* nk_ui_init()
 
     return &ui.context;
 }
-
+void nk_ui_gldestroy()
+{
+    glDeleteBuffers(1, &ui.indexbufferobject);
+    glDeleteBuffers(1, &ui.vertexbufferobject);
+    glDeleteVertexArrays(1, &ui.vertexarrayobject);
+    ui.vertexbufferobject = 0;
+    ui.vertexbuffer = 0;
+    ui.indexbufferobject = 0;
+    ui.indexbuffer = 0;
+    ui.vertexarrayobject = 0;
+}
 void nk_ui_destroy()
 {
+    nk_ui_gldestroy();
     nk_free(&ui.context);
 }
 void nk_ui_wait_for_buffer_unlock()
@@ -231,7 +241,7 @@ void nk_ui_lock_buffer()
     ui.sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 }
 
-void nk_ui_render()
+void nk_ui_render(int width,int height)
 {
     nk_buffer vbuf = {0};
     nk_buffer ibuf = {0};
@@ -260,7 +270,7 @@ void nk_ui_render()
 
     if(returncode == 0)
     {
-        glViewport(0, 0, options.width, options.height);
+        glViewport(0, 0, width, height);
         const nk_draw_command* cmd;
         nk_draw_index* offset = 0;
         glBindVertexArray(ui.vertexarrayobject);
@@ -274,8 +284,8 @@ void nk_ui_render()
         glBindAttribLocation(currentprogram, 1, "in_Uvs");
         glBindAttribLocation(currentprogram, 2, "in_Color");
         mat4 ortho = {0};
-        ortho.m[0] = 2.0f / (float)options.width;
-        ortho.m[5] = -2.0f / (float)options.height;
+        ortho.m[0] = 2.0f / (float)width;
+        ortho.m[5] = -2.0f / (float)height;
         ortho.m[10] = -1.0f;
         ortho.m[12] = -1.0f;
         ortho.m[13] = 1.0f;
@@ -339,7 +349,7 @@ void nk_ui_render()
             setUniformi("hastexture", &hastex, 1);
             glScissor(
                 (GLint)(cmd->clip_rect.x),
-                (GLint)((options.height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))),
+                (GLint)((height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h))),
                 (GLint)(cmd->clip_rect.w),
                 (GLint)(cmd->clip_rect.h));
             glVertexAttribPointer(0, 2, GL_FLOAT, 0, sizeof(ui_vertex), (void*)offsetof(ui_vertex, pos));

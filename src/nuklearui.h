@@ -15,7 +15,7 @@
 
 struct nk_context* nk_ui_init();
 void nk_ui_destroy();
-void nk_ui_render();
+void nk_ui_render(int width,int height);
 void nk_ui_update();
 struct nk_image nk_ui_image(char* filename);
 

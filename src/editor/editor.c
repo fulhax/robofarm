@@ -11,6 +11,7 @@
 #include "renderfunc.h"
 #include "nuklearui.h"
 #include "editorui.h"
+#include <dlfcn.h>
 
 GLFWwindow* window = 0;
 int should_quit = 0;
@@ -29,6 +30,11 @@ char lastmouseinside = 0;
 char keyboard[GLFW_KEY_LAST + 1] = {0};
 char keyboardlast[GLFW_KEY_LAST + 1] = {0};
 
+void* libedituihandle = 0;
+void (*uidestroy)() = 0;
+void (*uiinit)(GLFWwindow* w) = 0;
+void (*uilogic)(int width, int hegiht) = 0;
+void (*uirender)(int width, int height) = 0;
 
 void error_callback(int error, const char* description)
 {
@@ -108,8 +114,42 @@ void handleKeys()
     }
 }
 
+void loadlibeditorui()
+{
+    if(libedituihandle != 0)
+    {
+        dlclose(libedituihandle);
+        libedituihandle = 0;
+    }
+
+    libedituihandle = dlopen("./build/editor/libeditorui.so", RTLD_LAZY);
+
+    if(libedituihandle == 0)
+    {
+        printf("error loading libeditorui.so\n%s\n", dlerror());
+        system("ls ./build/editor/libeditorui.so");
+        exit(1);
+    }
+
+    *(void**)(&uidestroy) = dlsym(libedituihandle, "ui_destroy");
+    *(void**)(&uiinit) = dlsym(libedituihandle, "ui_init");
+    *(void**)(&uilogic) = dlsym(libedituihandle, "ui_logic");
+    *(void**)(&uirender) = dlsym(libedituihandle, "ui_render");
+    printf("loaded lib\n");
+}
+
+void reloadeditorui(const char* filename)
+{
+    system("make");
+    uidestroy();
+    loadlibeditorui();
+    uiinit(window);
+}
+
 int main(int argc, char* argv[])
 {
+    loadlibeditorui();
+
     if(!handle_options(argc, argv))
     {
         return 0;
@@ -150,26 +190,27 @@ int main(int argc, char* argv[])
     glfwSetKeyCallback(window, key_handler_callback);
     glfwSwapInterval(0);
     glfwSwapBuffers(window);
+    watchFile("./src/editor/editorui.c", reloadeditorui);
     ilInit();
     iluInit();
     initImages();
-    ui_init();
+    uiinit(window);
 
     while(!glfwWindowShouldClose(window) && !should_quit)
     {
         handleMouse();
         handleKeys();
-        ui_logic();
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
+        uilogic(options.width, options.height);
+        glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        ui_render();
+        uirender(options.width, options.height);
         glfwSwapBuffers(window);
         glfwPollEvents();
         watchChanges();
         updateTime();
     }
 
-    ui_destroy();
+    uidestroy();
     cleanupImages();
     cleanupShaders();
     destroyFileWatcher();

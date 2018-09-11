@@ -3,9 +3,7 @@
 
 void ui_init();
 void ui_destroy();
-void ui_render();
-void ui_logic();
-
-extern struct nk_colorf bg;
+void ui_render(int width, int height);
+void ui_logic(int width, int height);
 
 #endif //__EDITORUI_H__

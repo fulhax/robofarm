@@ -1,5 +1,4 @@
 #include "nuklearui.h"
-#include "options.h"
 #include "editorui.h"
 #include "opengl.h"
 #include <stdio.h>
@@ -10,7 +9,7 @@
 #include "notify.h"
 
 struct nk_colorf bg = {0};
-extern GLFWwindow* window;
+GLFWwindow* window = 0;
 struct nk_context* ctx = 0;
 
 typedef struct tile_image
@@ -90,8 +89,9 @@ void folderchangecallback(const char* dir)
     readtilefolder();
 }
 
-void ui_init()
+void ui_init(GLFWwindow* w)
 {
+    window = w;
     ctx = nk_ui_init();
     watchFile("./data/tiles", folderchangecallback);
     readtilefolder();
@@ -108,9 +108,9 @@ void ui_destroy()
     nk_ui_destroy();
 }
 
-void ui_render()
+void ui_render(int width, int height)
 {
-    nk_ui_render();
+    nk_ui_render(width, height);
 }
 
 enum
@@ -151,12 +151,12 @@ struct nk_style_button* ui_style_selected_button(char test)
     }
 }
 
-void ui_logic()
+void ui_logic(int inwidth, int inheight)
 {
     nk_ui_update();
     ui_style_disabled(state == NORMAL_STATE);
 
-    if(nk_begin(ctx, "main window", nk_rect(0, 0, options.width, options.height), NK_WINDOW_BORDER))
+    if(nk_begin(ctx, "main window", nk_rect(0, 0, inwidth, inheight), NK_WINDOW_BORDER))
     {
         nk_layout_row_dynamic(ctx, 16, 2);
         nk_label(ctx, "Types", NK_TEXT_CENTERED);
@@ -187,7 +187,7 @@ void ui_logic()
         nk_group_end(ctx);
         nk_layout_row_dynamic(ctx, 16, 1);
         nk_label(ctx, "Images", NK_TEXT_CENTERED);
-        int height = options.height - 290;
+        int height = inheight - 290;
 
         if(height < 250)
         {
@@ -214,7 +214,7 @@ void ui_logic()
 
     if(state == EDIT_TYPE)
     {
-        int height = options.height / 2 - 100;
+        int height = inheight / 2 - 100;
 
         if(height > 50)
         {
