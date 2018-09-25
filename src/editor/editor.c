@@ -12,6 +12,9 @@
 #include "nuklearui.h"
 #include "editorui.h"
 #include <dlfcn.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <execinfo.h>
 
 GLFWwindow* window = 0;
 int should_quit = 0;
@@ -35,6 +38,34 @@ void (*uidestroy)() = 0;
 void (*uiinit)(GLFWwindow* w) = 0;
 void (*uilogic)(int width, int hegiht) = 0;
 void (*uirender)(int width, int height) = 0;
+
+char needsreload = 0;
+sigjmp_buf before = {0};
+
+void print_trace(void)
+{
+    void* array[50];
+    size_t size;
+    char** strings;
+    size_t i;
+    size = backtrace(array, 50);
+    strings = backtrace_symbols(array, size);
+    fprintf(stderr, "Obtained %zd stack frames.\n", size);
+
+    for(i = 0; i < size; i++)
+    {
+        fprintf(stderr, "%s\n", strings[i]);
+    }
+
+    free(strings);
+}
+
+static void sighandler(int sig, siginfo_t* info, void* ucontext)
+{
+    print_trace();
+    needsreload = 1;
+    longjmp(before, 1);
+}
 
 void error_callback(int error, const char* description)
 {
@@ -66,7 +97,11 @@ void updateTime() // call once per frame
 
     if(currenttime - lasttime > 1.0)
     {
-        printf("%i fps frametime:%f\n", framecounter, deltaTime);
+        if(!needsreload)
+        {
+            printf("%i fps frametime:%f\n", framecounter, deltaTime);
+        }
+
         framecounter = 0;
         lasttime = currenttime;
     }
@@ -144,6 +179,7 @@ void reloadeditorui(const char* filename)
     uidestroy();
     loadlibeditorui();
     uiinit(window);
+    needsreload = 0;
 }
 
 int main(int argc, char* argv[])
@@ -194,23 +230,54 @@ int main(int argc, char* argv[])
     ilInit();
     iluInit();
     initImages();
+    struct sigaction sa = {0};
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_NODEFER;
+    sa.sa_sigaction = sighandler;
+    sigaction(SIGSEGV, &sa, 0);
     uiinit(window);
 
     while(!glfwWindowShouldClose(window) && !should_quit)
     {
         handleMouse();
         handleKeys();
-        uilogic(options.width, options.height);
+
+        if(!needsreload)
+        {
+            if(setjmp(before) == 0)
+            {
+                uilogic(options.width, options.height);
+            }
+        }
+
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        uirender(options.width, options.height);
+
+        if(!needsreload)
+        {
+            if(setjmp(before) == 0)
+            {
+                uirender(options.width, options.height);
+            }
+        }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
         watchChanges();
         updateTime();
     }
 
-    uidestroy();
+    if(!needsreload)
+    {
+        if(setjmp(before) == 0)
+        {
+            uidestroy();
+        }
+    }
+
+    sa.sa_sigaction = 0;
+    sa.sa_handler = SIG_DFL;
+    sigaction(SIGSEGV, &sa, 0);
     cleanupImages();
     cleanupShaders();
     destroyFileWatcher();

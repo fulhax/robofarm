@@ -95,12 +95,15 @@ void ui_init(GLFWwindow* w)
     ctx = nk_ui_init();
     watchFile("./data/tiles", folderchangecallback);
     readtilefolder();
-    ui_images.buttontest = nk_ui_image("./external/nuklear/example/icon/tools.png");
+    ui_images.buttontest = nk_ui_image("./data/tiles/tile_202.png");
     ui_style.button_selected = ctx->style.button;
     ui_style.button_selected.border_color.r = 0xfb;
     ui_style.button_selected.border_color.g = 0x89;
     ui_style.button_selected.border_color.b = 0x02;
     ui_style.button_selected.border_color.a = 0xff;
+    ui_style.button_selected.border_color.r = 0xff;
+    ui_style.button_selected.border_color.g = 0x09;
+    ui_style.button_selected.border_color.b = 0x02;
 }
 
 void ui_destroy()
@@ -151,6 +154,12 @@ struct nk_style_button* ui_style_selected_button(char test)
     }
 }
 
+void crashme()
+{
+    int* i = 0;
+    *i = 0;
+}
+
 void ui_logic(int inwidth, int inheight)
 {
     nk_ui_update();
@@ -165,6 +174,10 @@ void ui_logic(int inwidth, int inheight)
         if(nk_button_label(ctx, "new type"))
         {
             state = EDIT_TYPE;
+        }
+        if(nk_button_label(ctx, "DANGER!"))
+        {
+            crashme();
         }
 
         nk_layout_row_dynamic(ctx, 200, 2);
