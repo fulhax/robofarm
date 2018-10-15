@@ -25,7 +25,7 @@ target_link_libraries(tileeditor
     nuklear
     -Wl,--no-whole-archive
     dl
-    -rdynamic
+    -Wl,--export-dynamic
     )
 
 target_compile_options(tileeditor PUBLIC "-Werror")
@@ -33,5 +33,4 @@ target_compile_options(tileeditor PUBLIC "-Wall")
 target_compile_options(tileeditor PUBLIC "-Wpedantic")
 target_compile_options(tileeditor PUBLIC "-Wno-missing-braces")
 target_compile_options(editorui PUBLIC "-fPIC")
-target_compile_options(editorui PUBLIC "-shared")
 install(TARGETS tileeditor RUNTIME DESTINATION bin)

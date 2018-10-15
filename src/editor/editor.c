@@ -175,7 +175,7 @@ void loadlibeditorui()
 
 void reloadeditorui(const char* filename)
 {
-    system("make");
+    system("make -C build");
     uidestroy();
     loadlibeditorui();
     uiinit(window);
