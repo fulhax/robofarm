@@ -25,6 +25,7 @@ target_compile_options(robots PUBLIC "-Werror")
 target_compile_options(robots PUBLIC "-Wall")
 target_compile_options(robots PUBLIC "-Wpedantic")
 target_compile_options(robots PUBLIC "-fPIC")
+target_compile_options(robots PUBLIC "-Wno-missing-braces")
 target_include_directories(robots SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/../external/nuklear
     )
